@@ -24,35 +24,36 @@ import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
-//import kafka.jaa
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
-//import org.apache.log4j.Level;
-//import org.apache.log4j.Logger;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import com.bigProject_streaming.getProperties;
+
 public class MainProducer 
 {
 	//initialization logger
 	static Logger logger = Logger.getLogger(MainProducer.class.getName());
 	
 	
-	private static final String topic="twitter-test";
-	public static void PushTwittermessage(Producer<String, String> producer) throws InterruptedException {
-		String consumerKey = "UNrdMgapppFrSBap6Vu0YYgWY";
-		String consumerSecret = "MAdQYQMTbYxri1oym3qwxTCYABxr6gphPlliTXyLRnLbg9q0wE";
-		String token = "433147302-HfxHiAcgWqHoiyjvobAck02XkJbzaUXqHqPqV7sn";
-		String secret = "YHJgZX2IBbs6xYVnx4hEQ5XCoyu3ZqIFJRQvTTvwFsrux";
+	public static void PushTwittermessage(Producer<String, String> producer,String topic) throws InterruptedException {
+		
+		Properties props = getProperties.readProperties();
+		
+		String consumerKey = props.getProperty("consumerKey");
+		String consumerSecret = props.getProperty("consumerSecret");
+		String token = props.getProperty("token");
+		String secret = props.getProperty("secret");
 		
 		
 		BlockingQueue<String> queue = new LinkedBlockingQueue<String>(10000);
         StatusesFilterEndpoint endpoint = new StatusesFilterEndpoint();
         
         //add some track terms
-        endpoint.trackTerms(Lists.newArrayList("twitterapi", "#spotify"));
+        endpoint.trackTerms(Lists.newArrayList("twitterapi", "spotify"));
         Authentication auth = new OAuth1(consumerKey,consumerSecret,token,secret);
         
       //create a new BasicClient. By default gzip is enabled.
@@ -67,9 +68,8 @@ public class MainProducer
         
         //establish a connection
         client.connect();
-        //do whatever needs to be done with messages
 
-        for (int msgRead=0 ; msgRead<100 ; msgRead++) {
+        for (int msgRead=0 ; msgRead<20 ; msgRead++) {
         	try {
                 String msg = queue.take();
                 JsonElement jsonElement = new JsonParser().parse(msg);
@@ -88,7 +88,6 @@ public class MainProducer
                     else {
                     	logger.log(Level.INFO, "record doesn't contains 'open.spotify.com'");
                     }
-//                	System.out.println(jsonObject.getAsJsonObject("entities").getAsJsonArray("urls").get(0).getAsJsonObject().get("expanded_url"));
                 }
                 else {
                 	logger.log(Level.INFO,"record doesn't have 'urls' object");
@@ -105,13 +104,14 @@ public class MainProducer
 
     public static void main( String[] args )
     {
-//    	Logger.getLogger("org").setLevel(Level.ERROR);
 		Producer<String,String> producer = ProducerCreator.createProducerFe();
+		final String topic="twitter-test";
+
 		try {
-			PushTwittermessage(producer);
+			PushTwittermessage(producer,topic);
 		}
 		catch(InterruptedException e) {
-			System.out.println(e);
+			logger.log(Level.WARNING,e.getMessage());
 		}
     }
 }
