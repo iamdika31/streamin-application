@@ -29,7 +29,7 @@ public class Crawling_from_url {
 		try {
 			Document page = Jsoup.connect(url)
 					.get();
-			System.out.println(page.title());
+//			System.out.println(page.title());
 			String title = getData.getMetaTag(page, "og:title");
 			String description = getData.getMetaTag(page, "og:description");
 			String artist = getData.getMetaTag(page, "twitter:audio:artist_name");
@@ -48,11 +48,11 @@ public class Crawling_from_url {
 		}
 		return data_spotify;
 	}
-	public static void main(String[] args) {
-		Crawling_from_url getData = new Crawling_from_url();
-		String url = "https://open.spotify.com/user/bighitktm/playlist/0EzsHoXrDojeNignJqH1QO?si=JxAEAdQ1SyumiXsIUysGSg";  
-		JSONObject json = getData.get_information_spotify(url);
-		System.out.println(json);
-	}
+//	public static void main(String[] args) {
+//		Crawling_from_url getData = new Crawling_from_url();
+//		String url = "https://open.spotify.com/user/bighitktm/playlist/0EzsHoXrDojeNignJqH1QO?si=JxAEAdQ1SyumiXsIUysGSg";  
+//		JSONObject json = getData.get_information_spotify(url);
+//		System.out.println(json);
+//	}
 
 }
