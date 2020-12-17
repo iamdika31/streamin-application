@@ -1,6 +1,8 @@
 package com.bigProject_streaming;
 
+import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.Consumer;
@@ -9,9 +11,10 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 public class propsConsumer {
-	public static Consumer<String,String>createConsumer(String topic)
+	public static Consumer<String,String>createConsumer(String topic) throws IOException
     {
-		Properties project_props = getProperties.readProperties();
+		getProperties properties = new getProperties();		
+		Properties project_props = properties.readProperties();
     	Properties props = new Properties();
 		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, project_props.getProperty("BOOTSTRAP_SERVERS"));
 		props.put(ConsumerConfig.GROUP_ID_CONFIG,project_props.getProperty("GROUP_ID_CONFIG"));
@@ -24,4 +27,17 @@ public class propsConsumer {
 		consumer.subscribe(Collections.singletonList(topic));
 		return consumer;
     }
+	
+	public static HashMap<String, Object> kafkaParams() throws IOException{
+		getProperties properties = new getProperties();		
+		Properties project_props = properties.readProperties();
+		HashMap<String,Object> params = new HashMap<>();
+	   	params.put("bootstrap.servers", project_props.getProperty("BOOTSTRAP_SERVERS"));
+	   	params.put("key.deserializer", StringDeserializer.class.getName());
+	   	params.put("value.deserializer", StringDeserializer.class.getName());
+	   	params.put("group.id", "group1");
+	   	params.put("auto.offset.reset", "latest");    
+	   	params.put("enable.auto.commit",true);
+	   	return params;
+	}
 }

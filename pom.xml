@@ -86,9 +86,23 @@
 	    <version>1.12.1</version>
 	</dependency>
 	
+	<dependency>
+	    <groupId>org.elasticsearch.client</groupId>
+	    <artifactId>elasticsearch-rest-high-level-client</artifactId>
+	    <version>7.10.1</version>
+	</dependency>
+	
+	<!-- https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient -->
+	<dependency>
+	    <groupId>org.apache.httpcomponents</groupId>
+	    <artifactId>httpclient</artifactId>
+	    <version>4.5.12</version>
+	</dependency>
+	
   </dependencies>
 
   <build>
+  <finalName>runProject</finalName>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
@@ -115,6 +129,14 @@
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
+          <configuration>
+			      <archive>
+			        <manifest>
+			          <addClasspath>true</addClasspath>
+			          <mainClass>com.bigProject_streaming.RunApp</mainClass>
+			        </manifest>
+			      </archive>
+   			 </configuration>
           <version>2.5.2</version>
         </plugin>
         <plugin>

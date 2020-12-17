@@ -1,5 +1,6 @@
 package com.bigProject_streaming;
 
+import java.io.IOException;
 import java.util.Properties;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -11,8 +12,9 @@ import com.bigProject_streaming.getProperties;
 
 
 public class ProducerCreator {
-	public static Producer<String,String> createProducerFe(){
-		Properties project_props = getProperties.readProperties();
+	public static Producer<String,String> createProducerFe() throws IOException{
+		getProperties properties = new getProperties();
+		Properties project_props = properties.readProperties();
 		Properties props = new Properties();
 		props.put(ProducerConfig.ACKS_CONFIG, project_props.getProperty("ACKS_VALUE") );
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, project_props.getProperty("BOOTSTRAP_SERVERS"));

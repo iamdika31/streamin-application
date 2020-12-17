@@ -12,7 +12,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class Crawling_from_url {
+public class Crawling_information {
 
 	String getMetaTag(Document document, String attr) {	    
 	    Elements elements = document.select("meta[property=" + attr + "]");
@@ -24,7 +24,7 @@ public class Crawling_from_url {
 	}
 	
 	public JSONObject get_information_spotify(String url) {
-		Crawling_from_url getData = new Crawling_from_url();
+		Crawling_information getData = new Crawling_information();
 		JSONObject data_spotify = new JSONObject();
 		try {
 			Document page = Jsoup.connect(url)
@@ -47,6 +47,27 @@ public class Crawling_from_url {
 			e.printStackTrace();
 		}
 		return data_spotify;
+	}
+	
+	
+	public static JSONObject get_information_tweets(String tweet) {
+		JSONObject data_tweet = new JSONObject();
+
+		JsonElement jsonElement = new JsonParser().parse(tweet);
+        
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        String spotify_url = jsonObject.getAsJsonObject("entities").getAsJsonArray("urls").get(0).getAsJsonObject().get("expanded_url").getAsString();
+        String created_at = jsonObject.get("created_at").getAsString();
+        String screen_name = jsonObject.getAsJsonObject("user").get("screen_name").getAsString();
+        String name = jsonObject.getAsJsonObject("user").get("name").getAsString();
+        String sources = jsonObject.get("source").getAsString();
+        data_tweet.put("spotify_url", spotify_url);
+        data_tweet.put("created_at", created_at);
+        data_tweet.put("screen_name", screen_name);
+        data_tweet.put("name", name);
+        data_tweet.put("sources", sources);
+         
+		return data_tweet;
 	}
 //	public static void main(String[] args) {
 //		Crawling_from_url getData = new Crawling_from_url();
