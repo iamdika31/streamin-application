@@ -32,7 +32,7 @@ public class RunApp {
 	            public void run() 
 	            { 
 	                try { 
-	                	MainConsumer.mains(topic);
+	                	MainConsumer.WithSparkStream(topic);
 	                } 
 	                catch (InterruptedException e) { 
 	                	logger.log(Level.WARNING,e.getMessage());
