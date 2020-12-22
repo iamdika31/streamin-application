@@ -6,6 +6,7 @@
 
   <groupId>com</groupId>
   <artifactId>bigProject_streaming</artifactId>
+  <packaging>jar</packaging>
   <version>0.0.1-SNAPSHOT</version>
 
   <name>bigProject_streaming</name>
@@ -99,17 +100,45 @@
 	    <version>4.5.12</version>
 	</dependency>
 	
+	<dependency>
+		<groupId>org.apache.spark</groupId>
+		<artifactId>spark-hive_2.11</artifactId>
+		<version>2.4.5</version>
+		<scope>provided</scope>
+	</dependency>
+	
+	<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+	<dependency>
+	    <groupId>org.postgresql</groupId>
+	    <artifactId>postgresql</artifactId>
+	    <version>42.2.18</version>
+	</dependency>
+	
   </dependencies>
 
+
   <build>
-  <finalName>runProject</finalName>
+  <finalName>MainConsumer2</finalName>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
+ 
       <plugins>
         <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
           <version>3.1.0</version>
-        </plugin>
+	        </plugin>
+	        
+	        <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-eclipse-plugin</artifactId>
+                <version>2.9</version>
+                <configuration>
+                    <downloadSources>true</downloadSources>
+                    <downloadJavadocs>false</downloadJavadocs>
+                </configuration>
+            </plugin>
+        
+        
         <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
@@ -124,19 +153,21 @@
           <version>2.22.1</version>
         </plugin>
         <plugin>
+        	<groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>3.0.2</version>
-        </plugin>
+          <configuration>
+				<archive>
+				<manifest>
+				<addClasspath>true</addClasspath>
+				<classpathPrefix>lib/</classpathPrefix>
+				<mainClass>com.bigProject_streaming.MainConsumer</mainClass>
+				</manifest>
+				</archive>
+			</configuration>
+         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
-          <configuration>
-			      <archive>
-			        <manifest>
-			          <addClasspath>true</addClasspath>
-			          <mainClass>com.bigProject_streaming.RunApp</mainClass>
-			        </manifest>
-			      </archive>
-   			 </configuration>
           <version>2.5.2</version>
         </plugin>
         <plugin>
@@ -151,7 +182,7 @@
         <plugin>
           <artifactId>maven-project-info-reports-plugin</artifactId>
           <version>3.0.0</version>
-        </plugin>
+        </plugin>   
       </plugins>
     </pluginManagement>
   </build>

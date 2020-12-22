@@ -1,13 +1,19 @@
 package com.bigProject_streaming;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.StructType;
 import org.apache.http.HttpHost;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
@@ -15,46 +21,67 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.json.simple.JSONObject;
 
 public class WriteToDataStorage {
-	static Logger logger = Logger.getLogger(RunApp.class.getName());
+	static Logger logger = Logger.getLogger(WriteToDataStorage.class.getName());
+	
+	public void writeData_structured(Dataset<Row> ds) {
+		Dataset<Row> SongCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.song")).drop(ds.col("playlist_created_by"));
+		Dataset<Row> PlaylistCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.playlist")).drop(ds.col("song_release_date"));
+		Dataset<Row> AlbumCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.album")).drop(ds.col("playlist_created_by"));		
+
+		
+		toHDFS(SongCategory, "/data_spotify/song.csv");
+		toHDFS(PlaylistCategory, "/data_spotify/playlist.csv");
+		toHDFS(AlbumCategory, "/data_spotify/album.csv");
+
+		toPostgres(SongCategory,"public.spotify_song");
+		toPostgres(PlaylistCategory,"public.spotify_playlist");
+		toPostgres(AlbumCategory,"public.spotify_album");
+	}
 	
 	public void toElastic(String msg, String indexName) throws IOException  {
 		Properties props = new getProperties().readProperties();
 		RestHighLevelClient client = new RestHighLevelClient( RestClient.builder(
 		        					 new HttpHost(props.getProperty("HOST"),Integer.parseInt(props.getProperty("PORT")),props.getProperty("TYPE") )));
 		
-		IndexRequest indexRequest = new IndexRequest(indexName,"_doc").source(msg,XContentType.JSON);
-		
-		IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
-		String id= indexResponse.getId();
-		logger.log(Level.INFO, id);
-		
+		try {
+			IndexRequest indexRequest = new IndexRequest(indexName,"_doc").source(msg,XContentType.JSON);
+			
+			IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+			String id= indexResponse.getId();
+			logger.log(Level.INFO, "success insert into elastic with "+indexName+" "+id);
+		}
+		catch(Exception e) {
+			logger.log(Level.WARNING, "ada kesalahan "+e.getMessage());
+		}
 		client.close();
 	}
-	public static void toHive(Dataset<Row> ds) {
-		Dataset<Row> SongCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.song")).drop(ds.col("playlist_created_by"));
-		Dataset<Row> PlaylistCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.playlist")).drop(ds.col("song_release_date"));
-		Dataset<Row> AlbumCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.album")).drop(ds.col("playlist_created_by"));		
-		SongCategory.show();
-		PlaylistCategory.show();
-		AlbumCategory.show();
+	public static void toHDFS(Dataset<Row> ds, String FolderName) {
+//		SongCategory.write().format("csv").option("header", "true").mode("append").option("sep", ";").save("/data_spotify/song.csv");
+//		PlaylistCategory.write().format("csv").option("header", "true").mode("append").option("sep", ";").save("/data_spotify/playlist.csv");
+//		AlbumCategory.write().format("csv").option("header", "true").mode("append").option("sep", ";").save("/data_spotify/album.csv");
+		try {
+			ds.write().format("csv").option("header", "true").mode("append").option("sep",";").save(FolderName);
+			logger.log(Level.INFO, "data success input to HDFS with folder name: "+FolderName);
+		}catch(Exception e) {
+			logger.log(Level.WARNING,e.getMessage());
+		}
 	}
-//	public static void main(String[] args) {
-//		SparkSession spark = SparkSession
-//			    .builder()
-//			    .master("local")
-//			    .appName("Java Spark SQL Example")
-//			    .getOrCreate();
-//		
-//				
-//		Dataset<Row> df = spark.read()
-//			    .option("mode", "DROPMALFORMED")
-//			    .option("delimiter",",")
-//			    .option("header","true")
-//			    .option("inferSchema","true")
-//			    .csv("file:///home/aryadika/example.csv");
-//		
-//		toHive(df);
-//	}
+	
+	public static void toPostgres(Dataset<Row> ds, String dbTable) {		
+		try {
+		ds.write().mode("append").format("jdbc")
+					.option("url","jdbc:postgresql://localhost:5432/data_spotify")
+					.option("dbtable",dbTable)
+					.option("user", "postgres")
+					.option("password", "root").save();
+		
+//		ds.show();
+			logger.log(Level.INFO, "data success input to POSTGRES with tablename "+dbTable);
+		}catch(Exception e) {
+			logger.log(Level.WARNING,e.getMessage());
+		}
+	}	
 }

@@ -31,7 +31,6 @@ import org.json.simple.JSONObject;
 
 import java.util.logging.Logger;
 import java.util.logging.Level;
-import com.bigProject_streaming.getProperties;
 
 public class MainProducer 
 {

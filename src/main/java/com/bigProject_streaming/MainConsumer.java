@@ -1,5 +1,7 @@
 package com.bigProject_streaming;
 
+
+import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -17,8 +19,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -50,10 +52,13 @@ import org.apache.spark.api.java.JavaRDD;
 class JavaSparkSessionSingleton {
     private static transient SparkSession instance = null;
     public static SparkSession getInstance(SparkConf sparkConf) {
+		String warehouseLocation = new File("spark-warehouse").getAbsolutePath();
       if (instance == null) {
         instance = SparkSession
           .builder()
           .config(sparkConf)
+//          .config("spark.sql.warehouse.dir",warehouseLocation)
+//          .enableHiveSupport()
           .getOrCreate();
       }
       return instance;
@@ -62,7 +67,7 @@ class JavaSparkSessionSingleton {
 
 class getInformation{
 	//initialization logger
-	static Logger logger = Logger.getLogger(MainProducer.class.getName());
+	static Logger logger = Logger.getLogger(MainConsumer.class.getName());
 	
 	public static String getJSONInformation(String message) {
 		
@@ -79,7 +84,7 @@ class getInformation{
 			json_tweet_append.putAll(json_spotify);
 		}
 		catch(Exception e){
-			logger.error(e);;
+			logger.log(Level.WARNING, "ada kesalahan");;
 		}
 		
 //		try {
@@ -100,21 +105,23 @@ class returnConsumerRecord implements Function<ConsumerRecord<String, String>,St
 
 class LoopAndPassingRDD{
 	public void call(JavaRDD<String> rdd,JavaSparkContext jsc ) throws Exception{
-		WriteToDataStorage writeElastic = new WriteToDataStorage();
+		WriteToDataStorage writeToStorage = new WriteToDataStorage();
 		List<String> list_rdd = rdd.collect();
 	    SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf());
 		if(!rdd.isEmpty()) {
 			List<String> tempVariable = new ArrayList<>();  	
-			list_rdd.forEach(x -> tempVariable.add(getInformation.getJSONInformation(x)));
+//			list_rdd.forEach(x -> writeElastic.toHive(getInformation.getJSONInformation(x)));
+			list_rdd.forEach(x -> tempVariable.add(getInformation.getJSONInformation(x)));			
 			JavaRDD<String> sample_data_spotifyRDD = jsc.parallelize(tempVariable);
 		    Dataset<Row> data = spark.read().json(sample_data_spotifyRDD);
-		    writeElastic.toHive(data);
-//		    data.show();
+		    writeToStorage.writeData_structured(data);
+		    data.show();
+//		    spark.close();
 		}
 	}
 }
 public class MainConsumer {
-	static Logger logger = Logger.getLogger(RunApp.class.getName());
+	static Logger logger = Logger.getLogger(MainConsumer.class.getName());
 
 	public static void WithSparkStream(String topic) throws InterruptedException, IOException {
 		
@@ -122,13 +129,13 @@ public class MainConsumer {
 
 		Collection<String> topics = Arrays.asList(topic);
 
-		Logger.getLogger("org").setLevel(Level.ERROR);
+//		Logger.getLogger("org").setLevel(Level.);
 		SparkConf conf = new SparkConf().setAppName("spark stream with kafka").setMaster("local[*]");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 		JavaStreamingContext ssc = new JavaStreamingContext(sc,Durations.seconds(5));
 				
 		
-		Map<String,Object> kafkaParams = propsConsumer.kafkaParams(); 
+		Map<String,Object> kafkaParams =  propsConsumer.kafkaParams(); 
 
 				
 		JavaInputDStream<ConsumerRecord<String, String>> stream =
@@ -149,7 +156,7 @@ public class MainConsumer {
 	}
 	public static void OnlyKafka(String topic, String indexName1,String indexName2)throws InterruptedException, IOException{
 		//initialization logger
-		Logger logger = Logger.getLogger(MainProducer.class.getName());
+//		Logger logger = Logger.getLogger(MainConsumer.class.getName());
 		WriteToDataStorage writeToDataStorage = new WriteToDataStorage();
 		try(Consumer<String, String> consumer = propsConsumer.createConsumer(topic)){
 			while(true) {
@@ -158,15 +165,16 @@ public class MainConsumer {
 					try {
 						writeToDataStorage.toElastic(record.value(),indexName1);
 						String json_tweet = getInformation.getJSONInformation(record.value());
+						System.out.println(json_tweet);
 						writeToDataStorage.toElastic(json_tweet,indexName2);
-					} catch (IOException e) {
-						logger.error(e);
+					} catch (Exception e) {
+						logger.log(Level.WARNING, "ada error");
 					}
 				}
 			}
 		}
 		catch(Exception e) {
-			logger.error(e);
+			logger.log(Level.WARNING, "ada error");
 		}
 	}
 	
@@ -181,7 +189,7 @@ public class MainConsumer {
 	            		OnlyKafka("twitter-test2", "data_twitter", "data_spotify");
 	                } 
 	                catch (InterruptedException | IOException e) { 
-	                	logger.log(Level.WARN,e.getMessage());
+	                	logger.log(Level.WARNING,e.getMessage());
 	                } 
 	            } 
 	        });
@@ -193,7 +201,7 @@ public class MainConsumer {
 	            		WithSparkStream("twitter-test2");
 	                } 
 	                catch (InterruptedException e) { 
-	                	logger.log(Level.WARN,e.getMessage());
+	                	logger.log(Level.WARNING,e.getMessage());
 	                } catch (IOException e) {
 						e.printStackTrace();
 					} 

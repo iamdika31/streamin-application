@@ -42,8 +42,8 @@ public class Crawling_information {
 			String artist = getData.getMetaTag(page, "twitter:audio:artist_name");
 			String type = getData.getMetaTag(page, "og:type");
 			String twitter_desc = getData.getMetaTag(page, "twitter:description");
-			String song_release_date = "";			
-			String playlist_created_by ="";
+			String song_release_date = null;			
+			String playlist_created_by =null;
 			
 			data_spotify.put("title", title);
 			data_spotify.put("full_title", full_title);
