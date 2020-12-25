@@ -32,9 +32,9 @@ public class WriteToDataStorage {
 		Dataset<Row> AlbumCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.album")).drop(ds.col("playlist_created_by"));		
 
 		
-		toHDFS(SongCategory, "/data_spotify/song.csv");
-		toHDFS(PlaylistCategory, "/data_spotify/playlist.csv");
-		toHDFS(AlbumCategory, "/data_spotify/album.csv");
+		toHDFS(SongCategory, "/data_spotify/song.csv","csv");
+		toHDFS(PlaylistCategory, "/data_spotify/playlist.csv","csv");
+		toHDFS(AlbumCategory, "/data_spotify/album.csv","csv");
 
 		toPostgres(SongCategory,"public.spotify_song");
 		toPostgres(PlaylistCategory,"public.spotify_playlist");
@@ -58,13 +58,21 @@ public class WriteToDataStorage {
 		}
 		client.close();
 	}
-	public static void toHDFS(Dataset<Row> ds, String FolderName) {
-//		SongCategory.write().format("csv").option("header", "true").mode("append").option("sep", ";").save("/data_spotify/song.csv");
-//		PlaylistCategory.write().format("csv").option("header", "true").mode("append").option("sep", ";").save("/data_spotify/playlist.csv");
-//		AlbumCategory.write().format("csv").option("header", "true").mode("append").option("sep", ";").save("/data_spotify/album.csv");
+	public static void toHDFS(Dataset<Row> ds, String FolderName, String typeFile) {
 		try {
-			ds.write().format("csv").option("header", "true").mode("append").option("sep",";").save(FolderName);
-			logger.log(Level.INFO, "data success input to HDFS with folder name: "+FolderName);
+			if(ds.count() != 0) {
+				if(typeFile.equals("csv")) {
+				ds.write().format("csv").option("header", "true").mode("append").option("sep",";").save(FolderName);
+				logger.log(Level.INFO, "data success input to HDFS with folder name: "+FolderName);
+				}
+				else if(typeFile.equals("json")) {
+					ds.write().mode("append").json(FolderName);
+					logger.log(Level.INFO, "data success input to HDFS with folder name: "+FolderName);				
+				}
+			}
+			else {
+				logger.log(Level.INFO, "dataset is empty");
+			}
 		}catch(Exception e) {
 			logger.log(Level.WARNING,e.getMessage());
 		}
@@ -72,14 +80,19 @@ public class WriteToDataStorage {
 	
 	public static void toPostgres(Dataset<Row> ds, String dbTable) {		
 		try {
-		ds.write().mode("append").format("jdbc")
-					.option("url","jdbc:postgresql://localhost:5432/data_spotify")
-					.option("dbtable",dbTable)
-					.option("user", "postgres")
-					.option("password", "root").save();
-		
-//		ds.show();
-			logger.log(Level.INFO, "data success input to POSTGRES with tablename "+dbTable);
+			if(ds.count()!= 0) {
+					ds.write().mode("append").format("jdbc")
+								.option("url","jdbc:postgresql://localhost:5432/data_spotify")
+								.option("dbtable",dbTable)
+								.option("user", "postgres")
+								.option("password", "root").save();
+					
+			//		ds.show();
+					logger.log(Level.INFO, "data success input to POSTGRES with tablename "+dbTable);
+			}
+			else {
+				logger.log(Level.INFO,"dataset is empty");
+			}
 		}catch(Exception e) {
 			logger.log(Level.WARNING,e.getMessage());
 		}

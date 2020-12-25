@@ -118,7 +118,7 @@
 
 
   <build>
-  <finalName>MainConsumer2</finalName>
+  <finalName>MainConsumerFinal2</finalName>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
  
       <plugins>

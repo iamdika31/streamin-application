@@ -57,8 +57,6 @@ class JavaSparkSessionSingleton {
         instance = SparkSession
           .builder()
           .config(sparkConf)
-//          .config("spark.sql.warehouse.dir",warehouseLocation)
-//          .enableHiveSupport()
           .getOrCreate();
       }
       return instance;
@@ -72,7 +70,6 @@ class getInformation{
 	public static String getJSONInformation(String message) {
 		
 		Crawling_information getData = new Crawling_information();
-		WriteToDataStorage writeElastic = new WriteToDataStorage();
 		JSONObject json_tweet_append = new JSONObject();
 		JSONObject json_spotify = new JSONObject();
 		try {
@@ -84,15 +81,9 @@ class getInformation{
 			json_tweet_append.putAll(json_spotify);
 		}
 		catch(Exception e){
-			logger.log(Level.WARNING, "ada kesalahan");;
+			logger.log(Level.WARNING, "ada kesalahan "+e.getMessage());
 		}
 		
-//		try {
-//			writeElastic.toElastic(message,"data_twitter");
-//			writeElastic.toElastic(json_tweet_append.toJSONString(),"data_spotify");
-//		} catch (IOException e) {
-//			logger.error(e);
-//		}
         return json_tweet_append.toJSONString();
 	}
 	
@@ -105,18 +96,29 @@ class returnConsumerRecord implements Function<ConsumerRecord<String, String>,St
 
 class LoopAndPassingRDD{
 	public void call(JavaRDD<String> rdd,JavaSparkContext jsc ) throws Exception{
+		Logger logger = Logger.getLogger(MainConsumer.class.getName());
 		WriteToDataStorage writeToStorage = new WriteToDataStorage();
 		List<String> list_rdd = rdd.collect();
 	    SparkSession spark = JavaSparkSessionSingleton.getInstance(rdd.context().getConf());
 		if(!rdd.isEmpty()) {
+			try {
+			//save raw data to hdfs
+			JavaRDD<String> list_rdd_parallize = jsc.parallelize(list_rdd);
+			Dataset<Row> data_mentah = spark.read().json(list_rdd_parallize);		
+		    writeToStorage.toHDFS(data_mentah,"/data_mentah/","json");		
+
+			//save data to postgres and hive						
 			List<String> tempVariable = new ArrayList<>();  	
-//			list_rdd.forEach(x -> writeElastic.toHive(getInformation.getJSONInformation(x)));
 			list_rdd.forEach(x -> tempVariable.add(getInformation.getJSONInformation(x)));			
 			JavaRDD<String> sample_data_spotifyRDD = jsc.parallelize(tempVariable);
 		    Dataset<Row> data = spark.read().json(sample_data_spotifyRDD);
 		    writeToStorage.writeData_structured(data);
-		    data.show();
+//		    data.show();
 //		    spark.close();
+			}
+			catch(Exception e) {
+				logger.log(Level.WARNING, "ada kesalahan :" + e.getMessage());
+			}
 		}
 	}
 }
@@ -129,7 +131,6 @@ public class MainConsumer {
 
 		Collection<String> topics = Arrays.asList(topic);
 
-//		Logger.getLogger("org").setLevel(Level.);
 		SparkConf conf = new SparkConf().setAppName("spark stream with kafka").setMaster("local[*]");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 		JavaStreamingContext ssc = new JavaStreamingContext(sc,Durations.seconds(5));
@@ -146,35 +147,40 @@ public class MainConsumer {
 				kafkaParams)
 				);
 		
+		//to return consumer value (message)
 		JavaDStream<String> stream1 = stream.map(new returnConsumerRecord());	
 		
+		//looping each message in rdd
 		stream1.foreachRDD(rdd -> new LoopAndPassingRDD().call(rdd, sc));
 							
 		ssc.start();
 		ssc.awaitTermination();
 	
 	}
+	
+	
 	public static void OnlyKafka(String topic, String indexName1,String indexName2)throws InterruptedException, IOException{
-		//initialization logger
-//		Logger logger = Logger.getLogger(MainConsumer.class.getName());
 		WriteToDataStorage writeToDataStorage = new WriteToDataStorage();
 		try(Consumer<String, String> consumer = propsConsumer.createConsumer(topic)){
 			while(true) {
 				ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofMillis(1000));
 				for(ConsumerRecord<String, String> record:consumerRecords) {
 					try {
+						//save raw data into elasticsearch
 						writeToDataStorage.toElastic(record.value(),indexName1);
 						String json_tweet = getInformation.getJSONInformation(record.value());
 						System.out.println(json_tweet);
+
+						//save new information data to elastic
 						writeToDataStorage.toElastic(json_tweet,indexName2);
 					} catch (Exception e) {
-						logger.log(Level.WARNING, "ada error");
+						logger.log(Level.WARNING, "ada error "+e.getMessage());
 					}
 				}
 			}
 		}
 		catch(Exception e) {
-			logger.log(Level.WARNING, "ada error");
+			logger.log(Level.WARNING, "ada error "+e.getMessage());
 		}
 	}
 	

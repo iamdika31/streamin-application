@@ -1,6 +1,8 @@
 package com.bigProject_streaming;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,6 +21,7 @@ import com.google.gson.JsonParser;
 
 
 public class Crawling_information {
+	static Logger logger = Logger.getLogger(Crawling_information.class.getName());
 
 	String getMetaTag(Document document, String attr) {	    
 	    Elements elements = document.select("meta[property=" + attr + "]");
@@ -68,7 +71,7 @@ public class Crawling_information {
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.log(Level.WARNING, "url tidak dapat dibuka "+e.getMessage());
 		}
 		return data_spotify;
 	}
@@ -103,13 +106,12 @@ public class Crawling_information {
 //		String url = "https://open.spotify.com/album/2qehskW9lYGWfYb0xPZkrS?si=bhiqADFdTVSX-VniRbonMw"; //album
 //		String url ="https://open.spotify.com/wrapped/share-e4724a8253204bdfb9386015c8a41d93-1080x1920?si=sC9D0J3WSCqH37Ujkg57Og&track-id=3hIjvZ64lMlOQ4iOKUZ1nv&lang=en"; //wrapped
 //		String url ="https://open.spotify.com/artist/343YYaA5MSjiZZ5cGyTr4u"; //artist
-//		Document doc = Jsoup.connect(url).get();
-//		Elements metaTags = doc.getElementsByTag("meta");
-//		for (Element metaTag : metaTags) {
-//			System.out.println(metaTag);
-//		}
-//
+//		String url = "https://open.spotify.com/playlist/37i9d";
+
 //		JSONObject json = getData.get_information_spotify(url);
+//		if(json.size()==0) {
+//			System.out.println(true);
+//		}
 //		System.out.println(json);
 //	}
 

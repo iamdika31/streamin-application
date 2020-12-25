@@ -52,11 +52,11 @@ public class MainProducer
 		BlockingQueue<String> queue = new LinkedBlockingQueue<String>(10000);
         StatusesFilterEndpoint endpoint = new StatusesFilterEndpoint();
         
-        //add some track terms
+        //find tweets contains with specific word
         endpoint.trackTerms(Lists.newArrayList("twitterapi", "spotify"));
         Authentication auth = new OAuth1(consumerKey,consumerSecret,token,secret);
         
-
+        //create client builder
         Client client = new ClientBuilder()
         			   .name("client-1")
         			   .hosts(Constants.STREAM_HOST)
@@ -65,20 +65,35 @@ public class MainProducer
                        .processor(new StringDelimitedProcessor(queue))
                        .build();
         
-        //establish a connection
+        //open connection
         client.connect();
 
-        for (int msgRead=0 ; msgRead<10 ; msgRead++) {
+        //loop to get tweet message
+//        for (int msgRead=0 ; msgRead<100 ; msgRead++) {
+        while(true) {
         	try {
+        		//take message and save to string
                 String message = queue.take();
+                //convert message to JsonElement
                 JsonElement jsonElement = new JsonParser().parse(message);
+                //convert to jsonObject
                 JsonObject jsonObject = jsonElement.getAsJsonObject();
+                
+                //check if tweet have url value
                 if(jsonObject.getAsJsonObject("entities").getAsJsonArray("urls").size() > 0 ) {
+                	
+                	//get expanded_url 
                     String spotify_url = jsonObject.getAsJsonObject("entities").getAsJsonArray("urls").get(0).getAsJsonObject().get("expanded_url").getAsString();
+                    
+                    // create regex to find url contains 'open.spotify.com'
                     String regex = "\\bopen.spotify.com\\b";
+                    
+                    //matcher function
                     Pattern pattern = Pattern.compile(regex);
                     Matcher matcher = pattern.matcher(spotify_url);
-                    System.out.println(spotify_url);  
+                    System.out.println(spotify_url);
+                    
+                    //check if matcher has match with given url and send to producer
                     if(matcher.find()) {
                         ProducerRecord<String, String> record = new ProducerRecord<String, String>(topic, message);
                 		producer.send(record);
@@ -97,8 +112,8 @@ public class MainProducer
                 }
         	 
         }
-        producer.close(); 	
-        client.stop();
+//        producer.close(); 	
+//        client.stop();
 	}
 
     public static void main( String[] args ) throws IOException
