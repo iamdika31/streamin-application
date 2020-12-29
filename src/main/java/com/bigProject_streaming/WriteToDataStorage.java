@@ -26,11 +26,10 @@ import org.json.simple.JSONObject;
 public class WriteToDataStorage {
 	static Logger logger = Logger.getLogger(WriteToDataStorage.class.getName());
 	
-	public void writeData_structured(Dataset<Row> ds) {
+	public void writeData_structured(Dataset<Row> ds) throws IOException {
 		Dataset<Row> SongCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.song")).drop(ds.col("playlist_created_by"));
 		Dataset<Row> PlaylistCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.playlist")).drop(ds.col("song_release_date"));
 		Dataset<Row> AlbumCategory = ds.select(ds.col("*")).where(ds.col("type").equalTo("music.album")).drop(ds.col("playlist_created_by"));		
-
 		
 		toHDFS(SongCategory, "/data_spotify/song.csv","csv");
 		toHDFS(PlaylistCategory, "/data_spotify/playlist.csv","csv");
@@ -58,6 +57,8 @@ public class WriteToDataStorage {
 		}
 		client.close();
 	}
+	
+	
 	public static void toHDFS(Dataset<Row> ds, String FolderName, String typeFile) {
 		try {
 			if(ds.count() != 0) {
@@ -78,14 +79,16 @@ public class WriteToDataStorage {
 		}
 	}
 	
-	public static void toPostgres(Dataset<Row> ds, String dbTable) {		
+	public static void toPostgres(Dataset<Row> ds, String dbTable) throws IOException {	
+		Properties props = new getProperties().readProperties();
+
 		try {
 			if(ds.count()!= 0) {
 					ds.write().mode("append").format("jdbc")
-								.option("url","jdbc:postgresql://localhost:5432/data_spotify")
+								.option("url",props.getProperty("url_postgres"))
 								.option("dbtable",dbTable)
-								.option("user", "postgres")
-								.option("password", "root").save();
+								.option("user", props.getProperty("user_postgres"))
+								.option("password", props.getProperty("password_postgres")).save();
 					
 			//		ds.show();
 					logger.log(Level.INFO, "data success input to POSTGRES with tablename "+dbTable);

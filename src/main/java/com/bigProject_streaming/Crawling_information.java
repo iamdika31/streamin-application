@@ -99,9 +99,13 @@ public class Crawling_information {
         data_tweet.put("sources", clean);
  		return data_tweet;
 	}
+	
+	
+	
+	
 //	public static void main(String[] args) throws IOException {
 //		Crawling_information getData = new Crawling_information();
-//		String url = "https://open.spotify.com/track/3Zwu2K0Qa5sT6teCCHPShP?si=P8kxSlPpSS2jAduC9Ed0HQ";  //song
+//		String url = "https://open.spotify.com/track/69ghzc538EQSVon2Gm3wrr?si=7zuAQBU-SLyj1GhPXkR8Sg";  //song
 //		String url = "https://open.spotify.com/playlist/3ynSZZ9gY42ngUKYKSGPIh?si=RwC-V4KERc2rNkT-yPkmLg";  //playlist
 //		String url = "https://open.spotify.com/album/2qehskW9lYGWfYb0xPZkrS?si=bhiqADFdTVSX-VniRbonMw"; //album
 //		String url ="https://open.spotify.com/wrapped/share-e4724a8253204bdfb9386015c8a41d93-1080x1920?si=sC9D0J3WSCqH37Ujkg57Og&track-id=3hIjvZ64lMlOQ4iOKUZ1nv&lang=en"; //wrapped
@@ -112,6 +116,10 @@ public class Crawling_information {
 //		if(json.size()==0) {
 //			System.out.println(true);
 //		}
+//		
+//		Document page = Jsoup.connect(url)
+//				.get();
+//		System.out.println(page);
 //		System.out.println(json);
 //	}
 

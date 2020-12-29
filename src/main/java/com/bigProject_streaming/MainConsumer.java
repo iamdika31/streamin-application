@@ -52,7 +52,6 @@ import org.apache.spark.api.java.JavaRDD;
 class JavaSparkSessionSingleton {
     private static transient SparkSession instance = null;
     public static SparkSession getInstance(SparkConf sparkConf) {
-		String warehouseLocation = new File("spark-warehouse").getAbsolutePath();
       if (instance == null) {
         instance = SparkSession
           .builder()
@@ -63,6 +62,7 @@ class JavaSparkSessionSingleton {
     }
   }
 
+
 class getInformation{
 	//initialization logger
 	static Logger logger = Logger.getLogger(MainConsumer.class.getName());
@@ -72,6 +72,7 @@ class getInformation{
 		Crawling_information getData = new Crawling_information();
 		JSONObject json_tweet_append = new JSONObject();
 		JSONObject json_spotify = new JSONObject();
+		
 		try {
 			JsonElement jsonElement = new JsonParser().parse(message);		        
 	        JsonObject jsonObject = jsonElement.getAsJsonObject();
@@ -88,11 +89,14 @@ class getInformation{
 	}
 	
 }
+
+
 class returnConsumerRecord implements Function<ConsumerRecord<String, String>,String>{
 	public String call(ConsumerRecord<String, String> cr) {
 		return cr.value();
 	}
 }
+
 
 class LoopAndPassingRDD{
 	public void call(JavaRDD<String> rdd,JavaSparkContext jsc ) throws Exception{
@@ -107,13 +111,12 @@ class LoopAndPassingRDD{
 			Dataset<Row> data_mentah = spark.read().json(list_rdd_parallize);		
 		    writeToStorage.toHDFS(data_mentah,"/data_mentah/","json");		
 
-			//save data to postgres and hive						
+			//save data to postgres & hdfs					
 			List<String> tempVariable = new ArrayList<>();  	
-			list_rdd.forEach(x -> tempVariable.add(getInformation.getJSONInformation(x)));			
+			list_rdd.forEach(msg -> tempVariable.add(getInformation.getJSONInformation(msg)));			
 			JavaRDD<String> sample_data_spotifyRDD = jsc.parallelize(tempVariable);
 		    Dataset<Row> data = spark.read().json(sample_data_spotifyRDD);
 		    writeToStorage.writeData_structured(data);
-//		    data.show();
 //		    spark.close();
 			}
 			catch(Exception e) {
@@ -122,6 +125,8 @@ class LoopAndPassingRDD{
 		}
 	}
 }
+
+
 public class MainConsumer {
 	static Logger logger = Logger.getLogger(MainConsumer.class.getName());
 
@@ -168,6 +173,7 @@ public class MainConsumer {
 					try {
 						//save raw data into elasticsearch
 						writeToDataStorage.toElastic(record.value(),indexName1);
+						
 						String json_tweet = getInformation.getJSONInformation(record.value());
 						System.out.println(json_tweet);
 
@@ -187,16 +193,20 @@ public class MainConsumer {
 	
 	
 	public static void main(String[] args) throws InterruptedException, IOException{
+		String topic = "twitter-test2";
 		 Thread t1 = new Thread(new Runnable() { 
 	            @Override
 	            public void run() 
 	            { 
 	                try { 
-	            		OnlyKafka("twitter-test2", "data_twitter", "data_spotify");
+	            		OnlyKafka(topic, "data_twitter", "data_spotify");
 	                } 
-	                catch (InterruptedException | IOException e) { 
+	                catch (InterruptedException e) { 
 	                	logger.log(Level.WARNING,e.getMessage());
 	                } 
+	                catch (IOException e) {
+						e.printStackTrace();
+					} 
 	            } 
 	        });
 		 Thread t2 = new Thread(new Runnable() { 
@@ -204,11 +214,12 @@ public class MainConsumer {
 	            public void run() 
 	            { 
 	                try { 
-	            		WithSparkStream("twitter-test2");
+	            		WithSparkStream(topic);
 	                } 
 	                catch (InterruptedException e) { 
 	                	logger.log(Level.WARNING,e.getMessage());
-	                } catch (IOException e) {
+	                } 
+	                catch (IOException e) {
 						e.printStackTrace();
 					} 
 	            } 

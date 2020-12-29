@@ -52,7 +52,7 @@ public class MainProducer
 		BlockingQueue<String> queue = new LinkedBlockingQueue<String>(10000);
         StatusesFilterEndpoint endpoint = new StatusesFilterEndpoint();
         
-        //find tweets contains with specific word
+        //find tweets contains specific word
         endpoint.trackTerms(Lists.newArrayList("twitterapi", "spotify"));
         Authentication auth = new OAuth1(consumerKey,consumerSecret,token,secret);
         
